@@ -56,6 +56,18 @@ To use **ExtFindr**, follow these steps:
 ```bash
 python extfindr.py -l urls.txt -o found_results.txt
 ```
+
+```bash
+python extfindr.py -h
+
+Usage: python extfindr.py -l <url_list_file> [-o <output_file>] [-t <num_threads>]
+
+Options:
+-l, --list          File containing list of URLs to scan (required)
+-o, --output        Output file to save the results (optional)
+-t, --threads       Number of concurrent threads (optional, default: 5)
+-h, --help          Show this help message
+```
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
