@@ -11,7 +11,7 @@ colors = {
     'reset': '\033[0m', 'bold': '\033[1m', 'blue': '\033[94m', 'green': '\033[92m', 'yellow': '\033[93m'
 }
 
-pattern = re.compile(r"\.(sql|bak|db|backup|secret|config|yml|yaml|env|ini|conf|properties|pem|key|crt|csr|p12|pdf)$")
+pattern = re.compile(r"\.(sql|bak|db|backup|secret|config|yml|yaml|env|ini|conf|properties|pem|key|crt|csr|p12|sqlite|sqlite3|db3|dbf|accdb|mdb|log|swp|swo|dump|json|xml|plist|cfg|cfm|htaccess|htpasswd|cer|der|pfx|p7b|p7c|jks|keystore|js|rb|php|py|pl|sh|bash|jar|war|ear|cs|cpp|h|c|passwd|shadow|doc|docx|ppt|pptx|xls|xlsx|odt|ods|odp|pdf|zip|rar|7z|tar\.gz|tgz|tar|gz|bz2|xz|token|kdb|kdbx|gitignore|gitattributes|git/config|git/credentials|dockerignore|Dockerfile|kubeconfig)$")
 
 def get_color(extension):
     return colors.get(extension, colors['reset'])
@@ -25,7 +25,7 @@ def scan_url(url):
             for line in output:
                 match = pattern.search(line)
                 if match:
-                    found_extensions.append(match.group())
+                    found_extensions.append(line)
             return found_extensions
         else:
             return None
@@ -33,20 +33,26 @@ def scan_url(url):
         print(f"Error scanning {url}: {e}")
         return None
 
-def print_colored_results(url, found_extensions):
+def print_and_save_results(url, found_extensions, output_file):
     if found_extensions:
-        for ext in found_extensions:
-            color = get_color(ext.split('.')[-1])
-            print(f"{colors['green']}{url}{colors['reset']} [found {color}{ext}{colors['reset']}]")
+        for ext_url in found_extensions:
+            extension = ext_url.split('.')[-1]
+            color = get_color(extension)
+            print(f"{colors['green']}{ext_url}{colors['reset']} [found {color}.{extension}{colors['reset']}]")
+            if output_file:
+                with open(output_file, 'a') as f:
+                    f.write(f"{ext_url} [found .{extension}]\n")
     else:
         print(f"{colors['yellow']}{url} [Nothing found]{colors['reset']}")
 
 def scan_urls_from_file(file_path, output_file=None):
-    found_results = []
     with open(file_path, 'r') as f:
         urls = f.readlines()
 
     print_banner()
+
+    if output_file:
+        open(output_file, 'w').close()
 
     for url in urls:
         url = url.strip()
@@ -54,14 +60,7 @@ def scan_urls_from_file(file_path, output_file=None):
             print(f"{colors['blue']}Scanning {url}...{colors['reset']}")
             found_extensions = scan_url(url)
             if found_extensions is not None:
-                print_colored_results(url, found_extensions)
-                if found_extensions:
-                    found_results.append(f"{url}: {', '.join(found_extensions)}")
-    
-    if output_file and found_results:
-        with open(output_file, 'w') as f:
-            f.write("\n".join(found_results))
-        print(f"{colors['bold']}Results saved to {output_file}{colors['reset']}")
+                print_and_save_results(url, found_extensions, output_file)
 
 def print_banner():
     banner = f"""
@@ -78,7 +77,7 @@ def print_banner():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Bulk scan URLs for high-severity file types and output results.")
     parser.add_argument("-l", "--list", help="File containing list of URLs to scan", required=True)
-    parser.add_argument("-o", "--output", help="Output file to save the results")
+    parser.add_argument("-o", "--output", help="Output file to save the results (only valid findings)")
     args = parser.parse_args()
 
     scan_urls_from_file(args.list, args.output)
